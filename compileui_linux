@@ -1,0 +1,8 @@
+#!/bin/sh
+
+rm generated/*.py
+pyuic4 ui/main.ui -o generated/ui_main.py
+touch generated/__init__.py
+
+echo Done.
+exit 0
