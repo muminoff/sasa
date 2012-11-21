@@ -76,5 +76,6 @@ class Client(object):
     ### Utils ###
     
     def getNextIqCounter(self):
-        self.iq_ctr = self.iq_ctr+ 1
+        self.iq_ctr = self.iq_ctr + 1
         return self.iq_ctr
+    
