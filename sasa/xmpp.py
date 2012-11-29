@@ -17,15 +17,21 @@ class Client(object):
         self.factory.addBootstrap(xmlstream.STREAM_END_EVENT, self.disconnected)
         self.factory.addBootstrap(xmlstream.STREAM_AUTHD_EVENT, self.authenticated)
         self.factory.addBootstrap(xmlstream.INIT_FAILED_EVENT, self.initFailed)
+        self.factory.startedConnecting = self.startedConnecting
         self.connector = tcp.XMPPConnector(reactor, client_jid.host, self.factory,
                                            defaultPort=5222)
         
         self.iq_ctr = 0
-        
+    
+    def startedConnecting(self, connector):
+        log.msg('start connecting')
+        self.app.startedConnecting(self.connector)        
+
     def connect(self):
         self.connector.connect()
         
     def disconnect(self):
+        self.xmlstream.sendFooter()
         self.factory.stopTrying()
         self.connector.disconnect()
 
@@ -79,3 +85,4 @@ class Client(object):
         self.iq_ctr = self.iq_ctr + 1
         return self.iq_ctr
     
+

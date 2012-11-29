@@ -3,6 +3,7 @@ Application's main widget
 """
 
 from twisted.internet import reactor
+from twisted.python import log
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -80,6 +81,7 @@ class MainWidget(QWidget):
         print 'disconnecting'
         
     def clientDisconnected(self):
+        print 'disconnected'
         self.ui.pb_login.reset()
         self.ui.pb_login.setVisible(False)
         self.ui.btn_login_connect.setDisabled(False)
@@ -94,6 +96,7 @@ class MainWidget(QWidget):
             self.ui.edit_login_passwd.setFocus()
         
     def closeEvent(self, event):
+        log.msg('closing mainwidget')
         reactor.stop()
         
     def keyPressEvent(self, event):
