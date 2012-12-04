@@ -14,6 +14,7 @@ from twisted.words.protocols.jabber import jid
 from twisted.web.client import Agent
 from twisted.web.http_headers import Headers
 from twisted.internet import reactor, defer
+from twisted.internet.error import ConnectionRefusedError
 
 ST_OFFLINE = 0
 ST_CONNECTING = 1
@@ -48,7 +49,7 @@ class Application(QObject):
     def startedConnecting(self, connector):
         self.emit(SIGNAL("SIG_CONNECTING"))
 
-    def connect(self, mode=''):
+    def connect(self):
         if self.status == ST_OFFLINE:
             self.status = ST_CONNECTING
             if self.client:
@@ -56,7 +57,12 @@ class Application(QObject):
                     
             username = str(self.main_widget.ui.edit_login_userid.text())
             password = str(self.main_widget.ui.edit_login_passwd.text())
+            if self.main_widget.ui.cb_login_type.isChecked():
+                mode = "skey"
+            else:
+                mode = "sasl"
             self.settings.setValue("recent/username", username)
+            self.settings.setValue("recent/logintype", mode)
             self.emit(SIGNAL("SIG_CONNECTING"))
 
             if mode == "skey":
@@ -64,10 +70,11 @@ class Application(QObject):
                 ## get skey from profile
                 
                 def onBody(body):
-                    data = json.loads(body)
-                    log.msg('password', data['skey'])
-                    self.client = xmpp.Client(self, jid.JID(username), data['skey'])
-                    self.client.connect()
+                    if body:
+                        data = json.loads(body)
+                        log.msg('password', data['skey'])
+                        self.client = xmpp.Client(self, jid.JID(username), data['skey'])
+                        self.client.connect()
                 
                 def cb(response):
                     finished = defer.Deferred()
@@ -75,7 +82,12 @@ class Application(QObject):
                     return finished
                     
                 def err(f):
-                    log.err()
+                    r = f.trap(ConnectionRefusedError)
+                    if r == ConnectionRefusedError:
+                        self.main_widget.ui.lbl_error.setText("Can't connect to AS server")
+                    else:
+                        self.main_widget.ui.lbl_error.setText("Unknown error")
+                    self.status = ST_OFFLINE
                     self.emit(SIGNAL("SIG_DISCONNECTED"))
                     
                 agent = Agent(reactor)
@@ -91,7 +103,7 @@ class Application(QObject):
                              }),
                         bodyProducer=bodyProducer)
                 
-                d.addCallbacks(cb, log.err)
+                d.addCallbacks(cb, err)
                 d.addCallbacks(onBody, log.err)
                 return d
      
@@ -113,5 +125,4 @@ class Application(QObject):
     def clientDisconnected(self):
         self.status = ST_OFFLINE
         self.emit(SIGNAL("SIG_DISCONNECTED"))
-        
-        
+    

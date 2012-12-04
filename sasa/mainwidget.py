@@ -20,6 +20,7 @@ class MainWidget(QWidget):
         QWidget.__init__(self)
         self.app = app
         self.setupUi()
+        self.connect_deferred = None
         
     def setupUi(self):
         self.ui = Ui_MainWidget()
@@ -41,6 +42,8 @@ class MainWidget(QWidget):
         self.ui.pb_login.setMaximum(0)
         self.ui.pb_login.setVisible(False)
         
+        self.ui.btn_login_cancel.hide()
+        
         self.connect(self.app, SIGNAL("SIG_CONNECTING"),
                      self.clientConnecting)
         self.connect(self.app, SIGNAL("SIG_CONNECTED"),
@@ -52,14 +55,20 @@ class MainWidget(QWidget):
         
         self.connect(self.ui.btn_login_connect, SIGNAL("clicked()"),
                      self.onConnect)
+        self.connect(self.ui.btn_login_cancel, SIGNAL("clicked()"),
+                     self.onCancelConnect)
         self.connect(self.ui.btn_login_register, SIGNAL("clicked()"),
                      self.onRegister)
     
     ### UI handlers
     
     def onConnect(self):
-        self.ui.btn_login_connect.setDisabled(True)
-        self.app.connect()
+        self.connect_deferred = self.app.connect()
+        
+    def onCancelConnect(self):
+        if self.connect_deferred:
+            self.connect_deferred.cancel()
+            self.connect_deferred = None
         
     def onRegister(self):
         print 'onRegister'
@@ -70,27 +79,38 @@ class MainWidget(QWidget):
     ### Slots ###
     
     def clientConnecting(self):
-        self.ui.pb_login.setVisible(True)
+        self.ui.lbl_error.clear()
+        self.ui.pb_login.show()
+        self.ui.btn_login_cancel.show()
+        self.ui.btn_login_connect.hide()
         
     def clientConnected(self):
-        self.ui.pb_login.setVisible(False)
-        self.ui.btn_login_connect.setDisabled(False)
+        self.ui.pb_login.hide()
+        self.ui.btn_login_cancel.show()
+        self.ui.btn_login_connect.show()
         self.ui.stacked_widget.setCurrentIndex(MAIN)
+        self.connect_deferred = None
         
     def clientDisconnecting(self):
-        print 'disconnecting'
+        pass
         
     def clientDisconnected(self):
-        print 'disconnected'
         self.ui.pb_login.reset()
-        self.ui.pb_login.setVisible(False)
-        self.ui.btn_login_connect.setDisabled(False)
+        self.ui.pb_login.hide()
+        self.ui.btn_login_cancel.hide()
+        self.ui.btn_login_connect.show()
         self.ui.stacked_widget.setCurrentIndex(LOGIN)
+        self.connect_deferred = None
     
     ### Events ###
     
     def showEvent(self, event):
         username = str(self.app.settings.value("recent/username").toString())
+        if self.app.settings.value("recent/logintype", "sasl").toString() == "skey":
+            self.ui.cb_login_type.setChecked(True)
+        else:
+            self.ui.cb_login_type.setChecked(False)
+            
         if len(username) > 0:
             self.ui.edit_login_userid.setText(username)
             self.ui.edit_login_passwd.setFocus()
