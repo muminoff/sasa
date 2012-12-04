@@ -10,7 +10,7 @@ from PyQt4.QtCore import *
 
 from generated.ui_main import Ui_MainWidget
 from generated import qrc_resource 
-import settings
+import main, settings
 
 
 LOGIN = 0
@@ -80,7 +80,13 @@ class MainWidget(QWidget):
         self.dlg_settings.show()
     
     def onConnect(self):
-        self.connect_deferred = self.app.connect()
+        username = str(self.ui.edit_login_userid.text())
+        password = str(self.ui.edit_login_passwd.text())
+        if self.ui.cb_login_type.isChecked():
+            mode = "skey"
+        else:
+            mode = "sasl"
+        self.connect_deferred = self.app.connect(username, password, mode)
         
     def onCancelConnect(self):
         if self.connect_deferred:
@@ -102,6 +108,8 @@ class MainWidget(QWidget):
         self.ui.btn_login_connect.hide()
         
     def clientConnected(self):
+        self.ui.lbl_main_notification.setText("Available")
+        self.ui.fr_settings.hide()
         self.ui.pb_login.hide()
         self.ui.btn_login_cancel.show()
         self.ui.btn_login_connect.show()
@@ -111,7 +119,11 @@ class MainWidget(QWidget):
     def clientDisconnecting(self):
         pass
         
-    def clientDisconnected(self):
+    def clientDisconnected(self, reason):
+        log.msg(reason)
+        if reason:
+            self.ui.lbl_error.setText("<font color='red'>%s</font>" % reason)
+        self.ui.fr_settings.show()
         self.ui.pb_login.reset()
         self.ui.pb_login.hide()
         self.ui.btn_login_cancel.hide()
@@ -131,6 +143,9 @@ class MainWidget(QWidget):
         if len(username) > 0:
             self.ui.edit_login_userid.setText(username)
             self.ui.edit_login_passwd.setFocus()
+            
+        if self.app.status == main.ST_OFFLINE:
+            self.ui.stacked_widget.setCurrentIndex(LOGIN)
         
     def closeEvent(self, event):
         reactor.stop()

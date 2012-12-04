@@ -42,34 +42,28 @@ class Application(QObject):
     ### API ###
     
     def showWindow(self):
-        if self.status == ST_OFFLINE:
-            self.main_widget.ui.stacked_widget.setCurrentIndex(mainwidget.LOGIN)
         self.main_widget.show()
     
     def startedConnecting(self, connector):
         self.emit(SIGNAL("SIG_CONNECTING"))
 
-    def connect(self):
+    def connect(self, username, password, mode):
         if self.status == ST_OFFLINE:
             self.status = ST_CONNECTING
+            
             if self.client:
                 self.client.disconnect()
-                    
-            username = str(self.main_widget.ui.edit_login_userid.text())
-            password = str(self.main_widget.ui.edit_login_passwd.text())
-            if self.main_widget.ui.cb_login_type.isChecked():
-                mode = "skey"
-            else:
-                mode = "sasl"
+            
             self.settings.setValue("recent/username", username)
             self.settings.setValue("recent/logintype", mode)
             self.emit(SIGNAL("SIG_CONNECTING"))
 
             if mode == "skey":
-                            
+                
                 ## get skey from profile
                 
                 def onBody(body):
+                    log.msg("body", body)
                     if body:
                         data = json.loads(body)
                         log.msg('password', data['skey'])
@@ -77,6 +71,7 @@ class Application(QObject):
                         self.client.connect()
                 
                 def cb(response):
+                    log.msg("res", response)
                     finished = defer.Deferred()
                     response.deliverBody(http.HTTPResponseHandler(finished))
                     return finished
@@ -84,19 +79,22 @@ class Application(QObject):
                 def err(f):
                     r = f.trap(ConnectionRefusedError)
                     if r == ConnectionRefusedError:
-                        self.main_widget.ui.lbl_error.setText("Can't connect to AS server")
+                        error = "Can't connect to AS server"
                     else:
-                        self.main_widget.ui.lbl_error.setText("Unknown error")
+                        error = "Unknown error"
                     self.status = ST_OFFLINE
-                    self.emit(SIGNAL("SIG_DISCONNECTED"))
-                    
+                    self.emit(SIGNAL("SIG_DISCONNECTED"), error)
+                
+                as_ = str(self.settings.value("smartauth/domain").toString())
+                api_key = str(self.settings.value("smartauth/apikey").toString())
+                
                 agent = Agent(reactor)
-                body = json.dumps({'api_key': 'qwerty123456',
+                body = json.dumps({'api_key': api_key,
                     'username': username,
                     'password': password})
                 bodyProducer = http.HTTPBodyProducer(body)
                 d = agent.request("POST",
-                        "http://localhost:8000/api/skey",
+                        as_ + "api/skey/",
                         headers=Headers({
                             'Accept': ['application/json'],
                             'Content-Type': ['application/json']
@@ -119,12 +117,9 @@ class Application(QObject):
 
     def clientConnected(self):
         self.status = ST_ONLINE
-        self.main_widget.ui.lbl_main_notification.setText("Available")
-        self.main_widget.ui.tb_settings.hide()
         self.emit(SIGNAL("SIG_CONNECTED"))
         
     def clientDisconnected(self):
         self.status = ST_OFFLINE
-        self.main_widget.ui.tb_settings.show()
-        self.emit(SIGNAL("SIG_DISCONNECTED"))
+        self.emit(SIGNAL("SIG_DISCONNECTED"), None)
     
