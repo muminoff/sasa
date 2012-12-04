@@ -159,7 +159,6 @@ class MainWidget(QWidget):
             QWidget.keyPressEvent(self, event)
         
     def moveEvent(self, event):
-        log.msg("move", event.pos(), QWidget.size(self))
         self.app.settings.setValue("recent/pos", QWidget.pos(self))
         self.app.settings.setValue("recent/size", QWidget.size(self))
         

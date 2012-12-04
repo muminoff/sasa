@@ -25,8 +25,10 @@ class SettingsDialog(QDialog):
         self.connect(self.ui.bbox, SIGNAL("rejected()"), self.reject)
         
     def accept(self):
-        self.app.settings.setValue("smartauth/apikey", self.ui.edit_api_key.text())
-        self.app.settings.setValue("smartauth/domain", self.ui.edit_domain.text())
+        self.app.settings.setValue("smartauth/auth/apikey", self.ui.edit_auth_api_key.text())
+        self.app.settings.setValue("smartauth/auth/domain", self.ui.edit_auth_domain.text())
+        self.app.settings.setValue("smartauth/profiles/apikey", self.ui.edit_profiles_api_key.text())
+        self.app.settings.setValue("smartauth/profiles/domain", self.ui.edit_profiles_domain.text())
         QDialog.accept(self)
         
     def onReject(self):
@@ -35,6 +37,8 @@ class SettingsDialog(QDialog):
     ### Events ###
     
     def showEvent(self, event):
-        self.ui.edit_api_key.setText(self.app.settings.value("smartauth/apikey", "").toString())
-        self.ui.edit_domain.setText(self.app.settings.value("smartauth/domain", "").toString())
+        self.ui.edit_auth_api_key.setText(self.app.settings.value("smartauth/auth/apikey", "").toString())
+        self.ui.edit_auth_domain.setText(self.app.settings.value("smartauth/auth/domain", "").toString())
+        self.ui.edit_profiles_api_key.setText(self.app.settings.value("smartauth/profiles/apikey", "").toString())
+        self.ui.edit_profiles_domain.setText(self.app.settings.value("smartauth/profiles/domain", "").toString())
         
