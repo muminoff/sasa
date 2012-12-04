@@ -29,8 +29,8 @@ class Application(QObject):
         QObject.__init__(self)
         self.status = ST_OFFLINE
         self.connector = None
-        self.main_widget = mainwidget.MainWidget(self)
         self.initSettings()
+        self.main_widget = mainwidget.MainWidget(self)
         self.client = None
         
     def initSettings(self):
@@ -120,9 +120,11 @@ class Application(QObject):
     def clientConnected(self):
         self.status = ST_ONLINE
         self.main_widget.ui.lbl_main_notification.setText("Available")
+        self.main_widget.ui.tb_settings.hide()
         self.emit(SIGNAL("SIG_CONNECTED"))
         
     def clientDisconnected(self):
         self.status = ST_OFFLINE
+        self.main_widget.ui.tb_settings.show()
         self.emit(SIGNAL("SIG_DISCONNECTED"))
     

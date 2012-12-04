@@ -1,7 +1,9 @@
 #!/bin/sh
 
 rm generated/*.py
+pyrcc4 ui/resources.qrc -o generated/qrc_resource.py
 pyuic4 ui/main.ui -o generated/ui_main.py
+pyuic4 ui/settings.ui -o generated/ui_settings.py
 touch generated/__init__.py
 
 echo Done.

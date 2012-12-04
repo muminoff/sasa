@@ -9,6 +9,8 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 
 from generated.ui_main import Ui_MainWidget
+from generated import qrc_resource 
+import settings
 
 
 LOGIN = 0
@@ -22,9 +24,14 @@ class MainWidget(QWidget):
         self.setupUi()
         self.connect_deferred = None
         
+        ### Dialogs ###
+        self.dlg_settings = settings.SettingsDialog(app)
+        
     def setupUi(self):
         self.ui = Ui_MainWidget()
         self.ui.setupUi(self)
+        
+        self.ui.tb_settings.setIcon(QIcon(":/settings.png"))
         
         menu = QMenu(self.ui.tool_title)
         menu.addAction('Available')
@@ -53,14 +60,24 @@ class MainWidget(QWidget):
         self.connect(self.app, SIGNAL("SIG_DISCONNECTED"),
                      self.clientDisconnected)
         
+        self.connect(self.ui.tb_settings, SIGNAL("clicked()"),
+                     self.onSettings)
         self.connect(self.ui.btn_login_connect, SIGNAL("clicked()"),
                      self.onConnect)
         self.connect(self.ui.btn_login_cancel, SIGNAL("clicked()"),
                      self.onCancelConnect)
         self.connect(self.ui.btn_login_register, SIGNAL("clicked()"),
                      self.onRegister)
+        
+        pos = self.app.settings.value("recent/pos").toPoint()
+        size = self.app.settings.value("recent/size").toSize()
+        self.move(pos)
+        self.resize(size)
     
-    ### UI handlers
+    ### UI handlers ###
+    
+    def onSettings(self):
+        self.dlg_settings.show()
     
     def onConnect(self):
         self.connect_deferred = self.app.connect()
@@ -116,7 +133,6 @@ class MainWidget(QWidget):
             self.ui.edit_login_passwd.setFocus()
         
     def closeEvent(self, event):
-        log.msg('closing mainwidget')
         reactor.stop()
         
     def keyPressEvent(self, event):
@@ -126,4 +142,9 @@ class MainWidget(QWidget):
                 self.onConnect()
         else:
             QWidget.keyPressEvent(self, event)
+        
+    def moveEvent(self, event):
+        log.msg("move", event.pos(), QWidget.size(self))
+        self.app.settings.setValue("recent/pos", QWidget.pos(self))
+        self.app.settings.setValue("recent/size", QWidget.size(self))
         
