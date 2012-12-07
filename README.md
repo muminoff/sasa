@@ -1,0 +1,4 @@
+sasa
+====
+
+PyQt XMPP client
